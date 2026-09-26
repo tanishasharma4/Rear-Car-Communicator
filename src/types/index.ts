@@ -22,7 +22,11 @@ export type HardwareMessageType =
   | '🛑 VEHICLE STOPPING'
   | '🚧 OBSTACLE AHEAD'
   | '🚑 AMBULANCE — YIELD RIGHT'
-  | '😴 DROWSINESS ALERT';
+  | '😴 DROWSINESS ALERT'
+  | '⚠️ CAUTION — LOW VISIBILITY'
+  | '🌫️ DENSE FOG ALERT';
+
+export type VisibilityCondition = 'CLEAR' | 'DENSE_FOG' | 'HEAVY_RAIN' | 'POOR_VISIBILITY';
 
 export interface Vehicle {
   id: string;

@@ -14,11 +14,14 @@ import {
   Activity, 
   Layers, 
   Cpu, 
-  Volume2
+  Volume2,
+  CloudFog,
+  CloudRain,
+  HelpCircle
 } from 'lucide-react';
 
 export const AIRoadScanner: React.FC = () => {
-  const { reportHazard, speakEnabled } = useApp();
+  const { reportHazard, speakEnabled, setRearDisplayMessage } = useApp();
   
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -27,6 +30,36 @@ export const AIRoadScanner: React.FC = () => {
   const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
   const [activeMediaSource, setActiveMediaSource] = useState<'demo' | 'webcam' | 'upload'>('demo');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  // Weather & Visibility AI Condition State
+  const [visibilityState, setVisibilityState] = useState<'CLEAR' | 'FOG' | 'HEAVY_RAIN'>('CLEAR');
+  const [cameraConfidenceLow, setCameraConfidenceLow] = useState<boolean>(false);
+
+  const handleVisibilityChange = (condition: 'CLEAR' | 'FOG' | 'HEAVY_RAIN') => {
+    setVisibilityState(condition);
+    if (condition === 'FOG') {
+      setCameraConfidenceLow(true); // Fog lowers visual clarity confidence
+      setRearDisplayMessage('🌫️ DENSE FOG ALERT');
+      if (speakEnabled) {
+        voiceService.speak(
+          "Low visibility detected due to dense fog. Rear display signaling Caution.",
+          "सावधान! घना कोहरा - दृश्यता कम है। गाड़ियों को अलर्ट भेजा गया है।"
+        );
+      }
+    } else if (condition === 'HEAVY_RAIN') {
+      setCameraConfidenceLow(true);
+      setRearDisplayMessage('⚠️ CAUTION — LOW VISIBILITY');
+      if (speakEnabled) {
+        voiceService.speak(
+          "Heavy rain detected. Low road visibility alert active.",
+          "सावधान! भारी बारिश - दृश्यता कम है। धीमे चलें।"
+        );
+      }
+    } else {
+      setCameraConfidenceLow(false);
+      setRearDisplayMessage('PASS FROM LEFT →');
+    }
+  };
 
   // Draw bounding boxes on canvas whenever detections or media change
   useEffect(() => {
@@ -106,6 +139,78 @@ export const AIRoadScanner: React.FC = () => {
           </label>
         </div>
       </div>
+
+      {/* AI VISIBILITY & WEATHER CONDITION SELECTOR BAR */}
+      <div className="mb-8 glass-panel p-4 rounded-2xl border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <CloudFog className="w-5 h-5 text-cyan-400" />
+          <div>
+            <h4 className="font-bold text-white text-xs uppercase tracking-wider font-mono">
+              AI VISIBILITY & WEATHER CONDITION MONITOR
+            </h4>
+            <p className="text-[11px] text-slate-400">
+              Identifies fog, rain, or low visibility $\rightarrow$ Sends CAUTION signal to rear traffic.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 text-xs font-mono">
+          <button
+            onClick={() => handleVisibilityChange('CLEAR')}
+            className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
+              visibilityState === 'CLEAR' ? 'bg-emerald-500 text-black' : 'bg-slate-900 text-slate-400 border border-slate-800'
+            }`}
+          >
+            ☀️ Clear Visibility
+          </button>
+          
+          <button
+            onClick={() => handleVisibilityChange('FOG')}
+            className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 ${
+              visibilityState === 'FOG' ? 'bg-cyan-500 text-black animate-pulse' : 'bg-slate-900 text-slate-400 border border-slate-800'
+            }`}
+          >
+            <CloudFog className="w-3.5 h-3.5" />
+            <span>🌫️ Dense Fog (कोहरा)</span>
+          </button>
+
+          <button
+            onClick={() => handleVisibilityChange('HEAVY_RAIN')}
+            className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 ${
+              visibilityState === 'HEAVY_RAIN' ? 'bg-blue-600 text-white animate-pulse' : 'bg-slate-900 text-slate-400 border border-slate-800'
+            }`}
+          >
+            <CloudRain className="w-3.5 h-3.5" />
+            <span>🌧️ Heavy Rain</span>
+          </button>
+        </div>
+      </div>
+
+      {/* LOW VISIBILITY / LOW AI CONFIDENCE WARNING CARD */}
+      {visibilityState !== 'CLEAR' && (
+        <div className="mb-8 bg-cyan-950/80 border-2 border-cyan-500/80 p-5 rounded-2xl shadow-xl shadow-cyan-500/10 animate-pulse">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <CloudFog className="w-8 h-8 text-cyan-400" />
+              <div>
+                <h4 className="font-extrabold text-white text-base flex items-center gap-2">
+                  <span>🌫️ LOW VISIBILITY DETECTED ({visibilityState === 'FOG' ? 'DENSE FOG' : 'HEAVY RAIN'})</span>
+                </h4>
+                <p className="text-xs font-mono text-cyan-200 mt-0.5">
+                  Clear sight range reduced to ~15m $\rightarrow$ Rear display signaling <span className="font-extrabold text-white">"⚠️ CAUTION — LOW VISIBILITY"</span>
+                </p>
+              </div>
+            </div>
+
+            {cameraConfidenceLow && (
+              <div className="bg-amber-950/80 border border-amber-500/80 px-3.5 py-2 rounded-xl text-amber-300 font-mono text-xs flex items-center gap-1.5">
+                <HelpCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>AI CONFIDENCE: LOW (&lt;60%) — UNVERIFIED WARNING</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* SECTION 12: POTHOLE WARNING ALERT BANNER */}
       {primaryPothole && (

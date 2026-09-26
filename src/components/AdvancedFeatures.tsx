@@ -9,13 +9,15 @@ import {
   Layers, 
   Gauge, 
   CloudRain, 
+  CloudFog,
   ShieldCheck, 
   AlertTriangle,
   Play,
   CheckCircle2,
   Video,
   RadioTower,
-  Volume2
+  Volume2,
+  HelpCircle
 } from 'lucide-react';
 
 export const AdvancedFeatures: React.FC = () => {
@@ -23,6 +25,7 @@ export const AdvancedFeatures: React.FC = () => {
 
   const [drowsinessAlert, setDrowsinessAlert] = useState<boolean>(false);
   const [ambulanceActive, setAmbulanceActive] = useState<boolean>(false);
+  const [fogActive, setFogActive] = useState<boolean>(false);
   const [hapticPulse, setHapticPulse] = useState<boolean>(false);
   const [arHudMode, setArHudMode] = useState<boolean>(true);
   const [blackboxRecording, setBlackboxRecording] = useState<boolean>(false);
@@ -38,6 +41,19 @@ export const AdvancedFeatures: React.FC = () => {
       );
     }
     setTimeout(() => setAmbulanceActive(false), 8000);
+  };
+
+  // Trigger Dense Fog / Low Visibility AI Detector Workflow
+  const handleTriggerFog = () => {
+    setFogActive(true);
+    setRearDisplayMessage('🌫️ DENSE FOG ALERT');
+    if (speakEnabled) {
+      voiceService.speak(
+        "Dense fog detected. Low camera visibility alert active.",
+        "सावधान! घना कोहरा - दृश्यता कम है। गाड़ियों को अलर्ट भेजा गया है।"
+      );
+    }
+    setTimeout(() => setFogActive(false), 8000);
   };
 
   // Trigger Drowsiness Fatigue Alert Workflow
@@ -119,6 +135,35 @@ export const AdvancedFeatures: React.FC = () => {
           >
             <Play className="w-4 h-4 fill-current" />
             <span>Simulate Ambulance Behind</span>
+          </button>
+        </div>
+
+        {/* MODULE 2: AI VISIBILITY & WEATHER CONDITION SCANNER */}
+        <div className={`glass-panel p-6 rounded-3xl border-slate-800 transition-all ${
+          fogActive ? 'border-cyan-500 bg-cyan-950/40 animate-pulse' : ''
+        }`}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 rounded-2xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center">
+              <CloudFog className="w-6 h-6" />
+            </div>
+            <span className="text-[10px] font-mono bg-cyan-500/20 text-cyan-300 px-2.5 py-0.5 rounded font-bold">
+              WEATHER AI SCANNER
+            </span>
+          </div>
+
+          <h3 className="font-extrabold text-white text-base mb-1">
+            2. AI Visibility & Fog/Rain Detector
+          </h3>
+          <p className="text-xs text-slate-300 mb-6 leading-relaxed">
+            Detects dense fog (कोहरा) & heavy rain. Sends <span className="font-bold text-cyan-400">"CAUTION — LOW VISIBILITY"</span> to rear display. Marks low-clarity hazards as <span className="text-amber-400 font-bold">UNVERIFIED</span>.
+          </p>
+
+          <button
+            onClick={handleTriggerFog}
+            className="w-full bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold py-2.5 rounded-xl text-xs shadow-lg transition-all flex items-center justify-center gap-2"
+          >
+            <Play className="w-4 h-4 fill-current" />
+            <span>Simulate Dense Fog Alert</span>
           </button>
         </div>
 
