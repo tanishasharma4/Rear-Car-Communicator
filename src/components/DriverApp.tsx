@@ -248,16 +248,17 @@ export const DriverApp: React.FC = () => {
             </p>
           </div>
 
-          {/* Quick Preset Voice Command Chips */}
+          {/* Quick Preset Voice Command Chips (English & Hindi) */}
           <div className="space-y-2 mb-6">
-            <p className="text-[11px] font-mono text-slate-400 uppercase">Try Voice Phrases:</p>
+            <p className="text-[11px] font-mono text-slate-400 uppercase">Try Voice Phrases (English & हिन्दी):</p>
             <div className="flex flex-wrap gap-2 text-xs">
               {[
                 "I want to overtake from the left",
-                "I am stopping",
+                "बायें से ओवरटेक करना है",
+                "गड्ढा है - सावधान",
                 "There is an obstacle ahead",
-                "My vehicle has broken down",
-                "I need help"
+                "मदद चाहिए (Need Help)",
+                "I am stopping"
               ].map((phrase, idx) => (
                 <button
                   key={idx}

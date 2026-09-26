@@ -24,7 +24,9 @@ export const Navbar: React.FC = () => {
     emergencyState, 
     startHackathonDemoFlow, 
     speakEnabled, 
-    setSpeakEnabled 
+    setSpeakEnabled,
+    voiceLanguage,
+    setVoiceLanguage
   } = useApp();
 
   const navItems = [
@@ -36,6 +38,7 @@ export const Navbar: React.FC = () => {
     { id: 'v2v', label: 'V2V Network', icon: Radio },
     { id: 'map', label: 'Live Map', icon: MapPin },
     { id: 'admin', label: 'Control Center', icon: BarChart3 },
+    { id: 'advanced', label: 'Advanced AI & IoT', icon: Sparkles },
     { id: 'privacy', label: 'Privacy & Team', icon: Lock },
   ];
 
@@ -100,18 +103,29 @@ export const Navbar: React.FC = () => {
           {/* Right Action Tools */}
           <div className="flex items-center gap-2">
             
-            {/* Audio Voice Toggle */}
-            <button
-              onClick={() => setSpeakEnabled(!speakEnabled)}
-              title={speakEnabled ? "Mute Voice Warnings" : "Enable Voice Warnings"}
-              className={`p-2 rounded-lg border text-xs transition-all ${
-                speakEnabled
-                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                  : 'bg-slate-800 border-slate-700 text-slate-400'
-              }`}
-            >
-              {speakEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-            </button>
+            {/* Audio Voice & Language Selector */}
+            <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 p-1 rounded-lg text-xs">
+              <button
+                onClick={() => setSpeakEnabled(!speakEnabled)}
+                title={speakEnabled ? "Mute Voice Warnings" : "Enable Voice Warnings"}
+                className={`p-1.5 rounded transition-all ${
+                  speakEnabled ? 'text-emerald-400 bg-emerald-500/10' : 'text-slate-500'
+                }`}
+              >
+                {speakEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+              </button>
+
+              <select
+                value={voiceLanguage}
+                onChange={(e) => setVoiceLanguage(e.target.value as any)}
+                title="Select Driver Voice Language (Hindi / English / Dual)"
+                className="bg-slate-950 border border-slate-800 text-[11px] font-mono font-bold text-cyan-400 rounded px-1.5 py-0.5 focus:outline-none cursor-pointer"
+              >
+                <option value="dual">🌐 EN + हिन्दी</option>
+                <option value="hi">🇮🇳 हिन्दी (Hindi)</option>
+                <option value="en">🇬🇧 English</option>
+              </select>
+            </div>
 
             {/* Hardware Status Indicator Badge */}
             <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 text-xs">

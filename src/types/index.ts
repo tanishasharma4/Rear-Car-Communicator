@@ -20,7 +20,9 @@ export type HardwareMessageType =
   | '🚨 EMERGENCY — HELP'
   | '⚠️ POTHOLE AHEAD'
   | '🛑 VEHICLE STOPPING'
-  | '🚧 OBSTACLE AHEAD';
+  | '🚧 OBSTACLE AHEAD'
+  | '🚑 AMBULANCE — YIELD RIGHT'
+  | '😴 DROWSINESS ALERT';
 
 export interface Vehicle {
   id: string;

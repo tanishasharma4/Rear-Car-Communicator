@@ -26,6 +26,8 @@ interface AppContextType {
   demoFlowName: string;
   speakEnabled: boolean;
   setSpeakEnabled: (val: boolean) => void;
+  voiceLanguage: 'en' | 'hi' | 'dual';
+  setVoiceLanguage: (lang: 'en' | 'hi' | 'dual') => void;
   
   // Actions
   setRearDisplayMessage: (msg: HardwareMessageType | string) => void;
@@ -145,6 +147,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [communicationLog, setCommunicationLog] = useState<CommunicationEvent[]>(initialCommEvents);
   const [isHardwareConnected, setIsHardwareConnected] = useState<boolean>(false);
   const [speakEnabled, setSpeakEnabled] = useState<boolean>(true);
+  const [voiceLanguage, setVoiceLanguageState] = useState<'en' | 'hi' | 'dual'>('dual');
+
+  const setVoiceLanguage = (lang: 'en' | 'hi' | 'dual') => {
+    setVoiceLanguageState(lang);
+    voiceService.setLanguage(lang);
+  };
 
   const [emergencyState, setEmergencyState] = useState<EmergencyState>({
     active: false,
@@ -250,9 +258,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setHazards(prev => [fullHazard, ...prev]);
     socketService.broadcastHazard(fullHazard);
 
-    // Audio Voice Alert
+    // Audio Voice Alert (Bilingual English + Hindi + Hinglish Phonetic)
     if (speakEnabled) {
-      voiceService.speak(`${fullHazard.title} detected approximately ${fullHazard.distanceApproxMeters} meters ahead.`);
+      const engText = `${fullHazard.title} detected approximately ${fullHazard.distanceApproxMeters} meters ahead.`;
+      const hindiDevanagari = `सावधान! आगे लगभग ${fullHazard.distanceApproxMeters} मीटर पर गड्ढा या खतरा है।`;
+      const hindiPhonetic = `Savdhaan! Aage lagbhag ${fullHazard.distanceApproxMeters} meter par gaddha ya khatra hai.`;
+      voiceService.speak(engText, hindiDevanagari, hindiPhonetic);
     }
 
     // V2V Alert
@@ -283,7 +294,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     if (speakEnabled) {
-      voiceService.speak("Emergency SOS activated. Alerting nearby vehicles and emergency traffic control center.");
+      const engSos = "Emergency SOS activated. Alerting nearby vehicles and emergency control center.";
+      const hindiDev = "आपत्कालीन SOS मदद चालू हो गई है। आस-पास की गाड़ियों को अलर्ट भेजा गया है।";
+      const hindiPhonetic = "Aapkaaleen SOS madad chalu ho gayi hai. Aas-paas ki gaadiyon ko alert bheja gaya hai.";
+      voiceService.speak(engSos, hindiDev, hindiPhonetic);
     }
   };
 
@@ -353,6 +367,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         demoFlowName,
         speakEnabled,
         setSpeakEnabled,
+        voiceLanguage,
+        setVoiceLanguage,
         setRearDisplayMessage,
         reportHazard,
         triggerEmergency,

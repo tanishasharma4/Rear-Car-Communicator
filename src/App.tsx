@@ -10,6 +10,7 @@ import { AIRoadScanner } from './components/AIRoadScanner';
 import { V2VNetwork } from './components/V2VNetwork';
 import { LiveSmartMap } from './components/LiveSmartMap';
 import { AdminDashboard } from './components/AdminDashboard';
+import { AdvancedFeatures } from './components/AdvancedFeatures';
 import { PrivacyAndRoadmap } from './components/PrivacyAndRoadmap';
 import { Footer } from './components/Footer';
 
@@ -32,6 +33,7 @@ const MainContent: React.FC = () => {
         {activeTab === 'v2v' && <V2VNetwork />}
         {activeTab === 'map' && <LiveSmartMap />}
         {activeTab === 'admin' && <AdminDashboard />}
+        {activeTab === 'advanced' && <AdvancedFeatures />}
         {activeTab === 'privacy' && <PrivacyAndRoadmap />}
       </main>
 
