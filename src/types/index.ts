@@ -28,6 +28,35 @@ export type HardwareMessageType =
 
 export type VisibilityCondition = 'CLEAR' | 'DENSE_FOG' | 'HEAVY_RAIN' | 'POOR_VISIBILITY';
 
+export interface ESP32PinState {
+  gpio14_passLeft: boolean;
+  gpio27_passRight: boolean;
+  gpio26_slowDown: boolean;
+  gpio32_emergencySOS: boolean;
+}
+
+export interface ESPNOWPacket {
+  id: string;
+  senderNode: string;
+  targetNode: string;
+  protocol: 'ESP-NOW' | 'Socket.IO';
+  rssi: number; // dBm e.g. -64
+  payloadBytes: number;
+  latitude: number;
+  longitude: number;
+  messagePayload: string;
+  timestamp: string;
+}
+
+export interface V2ITrafficLight {
+  intersectionId: string;
+  name: string;
+  distanceMeters: number;
+  currentPhase: 'RED' | 'YELLOW' | 'GREEN';
+  timeRemainingSeconds: number;
+  recommendedSpeedKmh: number;
+}
+
 export interface Vehicle {
   id: string;
   name: string;
@@ -42,6 +71,8 @@ export interface Vehicle {
   aiActive: boolean;
   battery: number;
   currentMessage: string;
+  baudRate: number; // 115200 bps
+  rssi: number; // -64 dBm
 }
 
 export interface Hazard {
@@ -49,8 +80,8 @@ export interface Hazard {
   type: HazardType;
   title: string;
   description: string;
-  confidence: number; // percentage e.g. 94
-  distanceApproxMeters: number; // e.g. 40
+  confidence: number;
+  distanceApproxMeters: number;
   lanePosition: 'YOUR LANE' | 'LEFT LANE' | 'RIGHT LANE' | 'SHOULDER';
   severity: HazardSeverity;
   latitude: number;
@@ -89,7 +120,7 @@ export interface AIDetection {
 
 export interface RiskAssessment {
   level: 'LOW' | 'MODERATE' | 'HIGH' | 'CRITICAL';
-  score: number; // 0 to 100
+  score: number;
   factors: string[];
   recommendation: string;
 }
@@ -102,12 +133,4 @@ export interface EmergencyState {
   longitude: number;
   nearbyAlertedCount: number;
   incidentStatus: 'ACTIVE' | 'RESPONDED' | 'RESOLVED';
-}
-
-export interface HackathonDemoStep {
-  step: number;
-  title: string;
-  subtitle: string;
-  actionDesc: string;
-  activeComponent: 'vision' | 'hardware' | 'v2v' | 'map' | 'emergency';
 }

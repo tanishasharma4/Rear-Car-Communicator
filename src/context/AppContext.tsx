@@ -29,6 +29,14 @@ interface AppContextType {
   voiceLanguage: 'en' | 'hi' | 'dual';
   setVoiceLanguage: (lang: 'en' | 'hi' | 'dual') => void;
   
+  // ESP32 & V2I Telemetry
+  esp32Pins: { gpio14_passLeft: boolean; gpio27_passRight: boolean; gpio26_slowDown: boolean; gpio32_emergencySOS: boolean };
+  serialLogs: { time: string; level: 'INFO' | 'WARN' | 'INTERRUPT' | 'TX'; text: string }[];
+  espNowPackets: any[];
+  v2iTrafficLight: { intersectionId: string; name: string; distanceMeters: number; currentPhase: 'RED' | 'YELLOW' | 'GREEN'; timeRemainingSeconds: number; recommendedSpeedKmh: number };
+  offlineMeshMode: boolean;
+  setOfflineMeshMode: (val: boolean) => void;
+  
   // Actions
   setRearDisplayMessage: (msg: HardwareMessageType | string) => void;
   reportHazard: (hazard: Partial<Hazard>) => void;
@@ -55,6 +63,8 @@ const initialVehicle: Vehicle = {
   aiActive: true,
   battery: 84,
   currentMessage: 'PASS FROM LEFT →',
+  baudRate: 115200,
+  rssi: -64,
 };
 
 const initialHazards: Hazard[] = [
@@ -138,6 +148,17 @@ const initialCommEvents: CommunicationEvent[] = [
   }
 ];
 
+const initialRiskAssessment: RiskAssessment = {
+  level: 'HIGH',
+  score: 84,
+  factors: [
+    'Deep asphalt pothole detected 40m ahead in active driving lane',
+    'Vehicle speed 48 km/h requires immediate deceleration advisory',
+    '8 independent vehicle corroborations in regional mesh network'
+  ],
+  recommendation: 'SLOW DOWN — ALERT REAR TRAFFIC TO PASS FROM LEFT'
+};
+
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -145,6 +166,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [vehicle, setVehicle] = useState<Vehicle>(initialVehicle);
   const [hazards, setHazards] = useState<Hazard[]>(initialHazards);
   const [communicationLog, setCommunicationLog] = useState<CommunicationEvent[]>(initialCommEvents);
+  const [riskAssessment, setRiskAssessment] = useState<RiskAssessment>(initialRiskAssessment);
   const [isHardwareConnected, setIsHardwareConnected] = useState<boolean>(false);
   const [speakEnabled, setSpeakEnabled] = useState<boolean>(true);
   const [voiceLanguage, setVoiceLanguageState] = useState<'en' | 'hi' | 'dual'>('dual');
@@ -163,16 +185,96 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     incidentStatus: 'RESOLVED',
   });
 
-  const [riskAssessment, setRiskAssessment] = useState<RiskAssessment>({
-    level: 'HIGH',
-    score: 72,
-    factors: [
-      'Pothole in driving lane ~40m ahead',
-      'Vehicle speed at 48 km/h',
-      'High confidence (94%) with 8 vehicle confirmations'
-    ],
-    recommendation: 'Reduce speed and maintain safe following distance from vehicles behind.',
+  const [offlineMeshMode, setOfflineMeshMode] = useState<boolean>(true); // Local radio mesh resilience mode
+  const [esp32Pins, setEsp32Pins] = useState({
+    gpio14_passLeft: false,
+    gpio27_passRight: false,
+    gpio26_slowDown: false,
+    gpio32_emergencySOS: false,
   });
+
+  const [serialLogs, setSerialLogs] = useState<{ time: string; level: 'INFO' | 'WARN' | 'INTERRUPT' | 'TX'; text: string }[]>([
+    { time: '11:04:15.120', level: 'INFO', text: '[ESP32 Boot] Baud: 115200 bps | MAC: 24:0AC4:00:01:0A | ESP-NOW Mesh Active' },
+    { time: '11:04:15.420', level: 'INFO', text: '[P5 RGB LED] Matrix Driver initialized (64x32 Canvas Resolution)' },
+    { time: '11:04:16.050', level: 'TX', text: '[ESP-NOW Radio] Broadcast Peer Node Announcement -> RSSI: -64 dBm' },
+  ]);
+
+  const [espNowPackets, setEspNowPackets] = useState<any[]>([
+    {
+      id: 'PKT-001',
+      senderNode: 'RCC-001',
+      targetNode: 'BROADCAST_ALL',
+      protocol: 'ESP-NOW',
+      rssi: -64,
+      payloadBytes: 48,
+      latitude: 37.7749,
+      longitude: -122.4194,
+      messagePayload: 'PASS FROM LEFT →',
+      timestamp: '11:04:16',
+    },
+    {
+      id: 'PKT-002',
+      senderNode: 'RCC-042',
+      targetNode: 'RCC-001',
+      protocol: 'ESP-NOW',
+      rssi: -68,
+      payloadBytes: 64,
+      latitude: 37.7752,
+      longitude: -122.4188,
+      messagePayload: 'ACK: PASS FROM LEFT',
+      timestamp: '11:04:17',
+    },
+    {
+      id: 'PKT-003',
+      senderNode: 'RCC-089',
+      targetNode: 'BROADCAST_ALL',
+      protocol: 'ESP-NOW',
+      rssi: -72,
+      payloadBytes: 52,
+      latitude: 37.7760,
+      longitude: -122.4175,
+      messagePayload: '⚠️ POTHOLE AHEAD — ~38m',
+      timestamp: '11:04:20',
+    }
+  ]);
+
+  const [v2iTrafficLight, setV2iTrafficLight] = useState({
+    intersectionId: 'V2I-INT-04',
+    name: '4th & Market St Smart Intersection',
+    distanceMeters: 280,
+    currentPhase: 'GREEN' as 'RED' | 'YELLOW' | 'GREEN',
+    timeRemainingSeconds: 14,
+    recommendedSpeedKmh: 55,
+  });
+
+  // Hardware Serial Console Listener
+  useEffect(() => {
+    const unsubConsole = serialService.onConsole((log) => {
+      setSerialLogs(prev => [log, ...prev.slice(0, 49)]);
+    });
+
+    const unsubscribe = serialService.onData((data) => {
+      if (data.message) {
+        setRearDisplayMessage(data.message);
+      }
+      if (data.gpioPin === 14) setEsp32Pins(p => ({ ...p, gpio14_passLeft: true }));
+      if (data.gpioPin === 27) setEsp32Pins(p => ({ ...p, gpio27_passRight: true }));
+      if (data.gpioPin === 26) setEsp32Pins(p => ({ ...p, gpio26_slowDown: true }));
+      if (data.gpioPin === 32) {
+        setEsp32Pins(p => ({ ...p, gpio32_emergencySOS: true }));
+        triggerEmergency();
+      }
+
+      setTimeout(() => {
+        setEsp32Pins({ gpio14_passLeft: false, gpio27_passRight: false, gpio26_slowDown: false, gpio32_emergencySOS: false });
+      }, 800);
+    });
+
+    return () => {
+      unsubConsole();
+      unsubscribe();
+    };
+  }, []);
 
   // Hackathon Demo State
   const [isDemoRunning, setIsDemoRunning] = useState<boolean>(false);
@@ -369,6 +471,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSpeakEnabled,
         voiceLanguage,
         setVoiceLanguage,
+        esp32Pins,
+        serialLogs,
+        espNowPackets,
+        v2iTrafficLight,
+        offlineMeshMode,
+        setOfflineMeshMode,
         setRearDisplayMessage,
         reportHazard,
         triggerEmergency,

@@ -13,7 +13,9 @@ import {
   ShieldAlert, 
   Navigation,
   Sparkles,
-  Lock
+  Lock,
+  RadioTower,
+  Sliders
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
@@ -34,8 +36,10 @@ export const Navbar: React.FC = () => {
     { id: 'driver', label: 'Driver App', icon: Car },
     { id: 'driving-mode', label: 'Driving Mode', icon: Navigation },
     { id: 'hardware', label: 'Hardware LED', icon: Cpu },
+    { id: 'led-designer', label: 'LED Designer', icon: Sliders },
     { id: 'vision', label: 'AI Road Scan', icon: Eye },
     { id: 'v2v', label: 'V2V Network', icon: Radio },
+    { id: 'v2i', label: 'V2I Sync', icon: RadioTower },
     { id: 'map', label: 'Live Map', icon: MapPin },
     { id: 'admin', label: 'Control Center', icon: BarChart3 },
     { id: 'advanced', label: 'Advanced AI & IoT', icon: Sparkles },
